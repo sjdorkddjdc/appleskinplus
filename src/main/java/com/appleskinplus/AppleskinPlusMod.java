@@ -7,10 +7,6 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import org.lwjgl.glfw.GLFW;
 
-/**
- * Главный класс мода. Регистрирует горячую клавишу F4.
- * Мод предназначен исключительно для кинематографической съёмки.
- */
 public class AppleskinPlusMod implements ClientModInitializer {
 
     public static final KeyBinding TOGGLE_KEY = KeyBindingHelper.registerKeyBinding(
@@ -28,6 +24,8 @@ public class AppleskinPlusMod implements ClientModInitializer {
             while (TOGGLE_KEY.wasPressed()) {
                 FreecamController.toggle();
             }
+            // Теперь tick() вызывается здесь, а не через миксин
+            FreecamController.tick();
         });
     }
 }
