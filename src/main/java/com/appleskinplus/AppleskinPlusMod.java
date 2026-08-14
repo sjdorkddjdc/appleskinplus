@@ -3,25 +3,30 @@ package com.appleskinplus;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.util.InputUtil;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.util.InputConstants;
+import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.glfw.GLFW;
 
 public class AppleskinPlusMod implements ClientModInitializer {
 
-    public static final KeyBinding TOGGLE_KEY = KeyBindingHelper.registerKeyBinding(
-        new KeyBinding(
+    private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
+        ResourceLocation.fromNamespaceAndPath("appleskinplus", "category")
+    );
+
+    public static final KeyMapping TOGGLE_KEY = KeyBindingHelper.registerKeyBinding(
+        new KeyMapping(
             "key.appleskinplus.toggle",
-            InputUtil.Type.KEYSYM,
+            InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_F4,
-            "category.appleskinplus"
+            CATEGORY
         )
     );
 
     @Override
     public void onInitializeClient() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            while (TOGGLE_KEY.wasPressed()) {
+            while (TOGGLE_KEY.consumeClick()) {
                 FreecamController.toggle();
             }
         });
