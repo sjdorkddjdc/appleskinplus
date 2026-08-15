@@ -51,11 +51,11 @@ public class FreecamController {
         cameraYaw   += deltaYaw;
         cameraPitch = MathHelper.clamp(cameraPitch + deltaPitch, -90.0f, 90.0f);
 
-        // Восстанавливаем углы игрока, чтобы персонаж стоял ровно
+        // Восстанавливаем углы игрока
         CLIENT.player.setYaw(savedPlayerYaw);
         CLIENT.player.setPitch(savedPlayerPitch);
 
-        // 2. БЛОКИРУЕМ ввод игрока напрямую
+        // 2. Блокируем ввод игрока
         if (CLIENT.player.input != null) {
             CLIENT.player.input.movementForward = 0.0f;
             CLIENT.player.input.movementSideways = 0.0f;
@@ -63,25 +63,18 @@ public class FreecamController {
             CLIENT.player.input.sneaking = false;
         }
 
-        // 3. Движение камеры (используем сохранённые состояния клавиш)
-        boolean forward  = CLIENT.options.forwardKey.isPressed();
-        boolean back     = CLIENT.options.backKey.isPressed();
-        boolean right    = CLIENT.options.rightKey.isPressed();
-        boolean left     = CLIENT.options.leftKey.isPressed();
-        boolean jump     = CLIENT.options.jumpKey.isPressed();
-        boolean sneak    = CLIENT.options.sneakKey.isPressed();
-
+        // 3. Движение камеры
         Vec3d move = Vec3d.ZERO;
         Vec3d fwd = Vec3d.fromPolar(0, cameraYaw);
         Vec3d rgt = Vec3d.fromPolar(0, cameraYaw + 90f);
         Vec3d up  = new Vec3d(0, 1, 0);
 
-        if (forward) move = move.add(fwd);
-        if (back)    move = move.subtract(fwd);
-        if (right)   move = move.add(rgt);
-        if (left)    move = move.subtract(rgt);
-        if (jump)    move = move.add(up);
-        if (sneak)   move = move.subtract(up);
+        if (CLIENT.options.forwardKey.isPressed()) move = move.add(fwd);
+        if (CLIENT.options.backKey.isPressed())    move = move.subtract(fwd);
+        if (CLIENT.options.rightKey.isPressed())   move = move.add(rgt);
+        if (CLIENT.options.leftKey.isPressed())    move = move.subtract(rgt);
+        if (CLIENT.options.jumpKey.isPressed())    move = move.add(up);
+        if (CLIENT.options.sneakKey.isPressed())   move = move.subtract(up);
 
         if (move.lengthSquared() > 0) {
             cameraPos = cameraPos.add(move.normalize().multiply(speed));
