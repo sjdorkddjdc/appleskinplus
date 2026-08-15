@@ -24,7 +24,6 @@ public class AppleskinPlusMod implements ClientModInitializer {
             while (TOGGLE_KEY.wasPressed()) {
                 FreecamController.toggle();
             }
-            // Теперь tick() вызывается здесь, а не через миксин
             FreecamController.tick();
         });
     }
