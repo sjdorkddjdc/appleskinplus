@@ -3,87 +3,217 @@ package com.appleskinplus;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+
 import org.lwjgl.glfw.GLFW;
 
-public class FreecamController {
-    private static final MinecraftClient CLIENT = MinecraftClient.getInstance();
+public final class FreecamController {
+
+    private static final MinecraftClient CLIENT =
+            MinecraftClient.getInstance();
+
+    private static final double DEFAULT_SPEED = 0.20;
+    private static final double MIN_SPEED = 0.05;
+    private static final double MAX_SPEED = 5.0;
 
     private static boolean active = false;
+
     private static Vec3d cameraPos = Vec3d.ZERO;
-    private static float cameraYaw = 0f;
-    private static float cameraPitch = 0f;
 
-    private static float savedPlayerYaw = 0f;
-    private static float savedPlayerPitch = 0f;
+    private static float cameraYaw;
+    private static float cameraPitch;
 
-    private static double speed = 0.2;
+    private static double speed = DEFAULT_SPEED;
 
-    public static boolean isActive()   { return active; }
-    public static Vec3d getPos()       { return cameraPos; }
-    public static float getYaw()       { return cameraYaw; }
-    public static float getPitch()     { return cameraPitch; }
+    private FreecamController() {
+    }
+
+    public static boolean isActive() {
+        return active;
+    }
+
+    public static Vec3d getPos() {
+        return cameraPos;
+    }
+
+    public static float getYaw() {
+        return cameraYaw;
+    }
+
+    public static float getPitch() {
+        return cameraPitch;
+    }
 
     public static void toggle() {
-        if (CLIENT.player == null) return;
-        if (!active) activate(); else deactivate();
+        if (CLIENT.player == null || CLIENT.world == null) {
+            return;
+        }
+
+        if (CLIENT.currentScreen != null) {
+            return;
+        }
+
+        if (active) {
+            deactivate();
+        } else {
+            activate();
+        }
     }
 
     private static void activate() {
+        if (CLIENT.player == null) {
+            return;
+        }
+
         active = true;
+
         cameraPos = CLIENT.player.getCameraPosVec(1.0f);
+
         cameraYaw = CLIENT.player.getYaw();
         cameraPitch = CLIENT.player.getPitch();
-
-        savedPlayerYaw = CLIENT.player.getYaw();
-        savedPlayerPitch = CLIENT.player.getPitch();
     }
 
-    private static void deactivate() {
+    public static void deactivate() {
         active = false;
     }
 
-    public static void tick() {
-        if (!active || CLIENT.player == null) return;
-
-        // 1. Перехватываем поворот мыши
-        float deltaYaw   = CLIENT.player.getYaw()   - savedPlayerYaw;
-        float deltaPitch = CLIENT.player.getPitch() - savedPlayerPitch;
-
-        cameraYaw   += deltaYaw;
-        cameraPitch = MathHelper.clamp(cameraPitch + deltaPitch, -90.0f, 90.0f);
-
-        // Восстанавливаем углы игрока
-        CLIENT.player.setYaw(savedPlayerYaw);
-        CLIENT.player.setPitch(savedPlayerPitch);
-
-        // 2. Блокируем ввод игрока напрямую
-        if (CLIENT.player.input != null) {
-            CLIENT.player.input.movementForward = 0.0f;
-            CLIENT.player.input.movementSideways = 0.0f;
-            CLIENT.player.input.jumping = false;
-            CLIENT.player.input.sneaking = false;
+    public static void rotate(
+            double deltaX,
+            double deltaY
+    ) {
+        if (!active) {
+            return;
         }
 
-        // 3. Движение камеры через GLFW напрямую (обходим блокировку ввода)
-        long window = CLIENT.getWindow().getHandle();
-        Vec3d move = Vec3d.ZERO;
-        Vec3d fwd = Vec3d.fromPolar(0, cameraYaw);
-        Vec3d rgt = Vec3d.fromPolar(0, cameraYaw + 90f);
-        Vec3d up  = new Vec3d(0, 1, 0);
+        cameraYaw += (float) deltaX * 0.15f;
 
-        if (GLFW.glfwGetKey(window, GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS) move = move.add(fwd);
-        if (GLFW.glfwGetKey(window, GLFW.GLFW_KEY_S) == GLFW.GLFW_PRESS) move = move.subtract(fwd);
-        if (GLFW.glfwGetKey(window, GLFW.GLFW_KEY_D) == GLFW.GLFW_PRESS) move = move.add(rgt);
-        if (GLFW.glfwGetKey(window, GLFW.GLFW_KEY_A) == GLFW.GLFW_PRESS) move = move.subtract(rgt);
-        if (GLFW.glfwGetKey(window, GLFW.GLFW_KEY_SPACE) == GLFW.GLFW_PRESS) move = move.add(up);
-        if (GLFW.glfwGetKey(window, GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS) move = move.subtract(up);
+        cameraPitch -= (float) deltaY * 0.15f;
 
-        if (move.lengthSquared() > 0) {
-            cameraPos = cameraPos.add(move.normalize().multiply(speed));
-        }
+        cameraPitch = MathHelper.clamp(
+                cameraPitch,
+                -90.0f,
+                90.0f
+        );
     }
 
-    public static void changeSpeed(double delta) {
-        speed = MathHelper.clamp(speed + delta * 0.05, 0.05, 5.0);
+    public static void tick() {
+
+        if (CLIENT.player == null || CLIENT.world == null) {
+            reset();
+            return;
+        }
+
+        if (!active) {
+            return;
+        }
+
+        /*
+         * GUI открыт:
+         * камера не двигается.
+         */
+        if (CLIENT.currentScreen != null) {
+            return;
+        }
+
+        long window =
+                CLIENT.getWindow().getHandle();
+
+        Vec3d movement = Vec3d.ZERO;
+
+        /*
+         * W/S остаются горизонтальными.
+         * Pitch камеры не влияет на движение.
+         */
+        Vec3d forward =
+                Vec3d.fromPolar(0.0f, cameraYaw);
+
+        Vec3d right =
+                Vec3d.fromPolar(
+                        0.0f,
+                        cameraYaw + 90.0f
+                );
+
+        Vec3d up =
+                new Vec3d(0.0, 1.0, 0.0);
+
+        if (isPressed(window, GLFW.GLFW_KEY_W)) {
+            movement = movement.add(forward);
+        }
+
+        if (isPressed(window, GLFW.GLFW_KEY_S)) {
+            movement = movement.subtract(forward);
+        }
+
+        if (isPressed(window, GLFW.GLFW_KEY_A)) {
+            movement = movement.subtract(right);
+        }
+
+        if (isPressed(window, GLFW.GLFW_KEY_D)) {
+            movement = movement.add(right);
+        }
+
+        if (isPressed(window, GLFW.GLFW_KEY_SPACE)) {
+            movement = movement.add(up);
+        }
+
+        if (isPressed(window, GLFW.GLFW_KEY_LEFT_SHIFT)) {
+            movement = movement.subtract(up);
+        }
+
+        if (movement.lengthSquared() == 0.0) {
+            return;
+        }
+
+        /*
+         * Нормализация:
+         *
+         * W       = 1.0 speed
+         * W + D   = 1.0 speed
+         *
+         * Нет ускорения по диагонали.
+         */
+        movement =
+                movement.normalize()
+                        .multiply(speed);
+
+        /*
+         * ВАЖНО:
+         *
+         * НИКАКИХ COLLISION CHECK.
+         *
+         * Камера свободно проходит через блоки.
+         */
+        cameraPos =
+                cameraPos.add(movement);
+    }
+
+    private static boolean isPressed(
+            long window,
+            int key
+    ) {
+        return GLFW.glfwGetKey(
+                window,
+                key
+        ) == GLFW.GLFW_PRESS;
+    }
+
+    public static void changeSpeed(
+            double amount
+    ) {
+        speed = MathHelper.clamp(
+                speed + amount * 0.05,
+                MIN_SPEED,
+                MAX_SPEED
+        );
+    }
+
+    public static void reset() {
+        active = false;
+
+        cameraPos = Vec3d.ZERO;
+
+        cameraYaw = 0.0f;
+        cameraPitch = 0.0f;
+
+        speed = DEFAULT_SPEED;
     }
 }
