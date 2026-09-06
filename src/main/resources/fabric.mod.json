@@ -2,10 +2,11 @@
   "schemaVersion": 1,
   "id": "appleskinplus",
   "version": "${version}",
-  "name": "Appleskin+",
-  "description": "Freecam tool for cinematic video recording. Does not alter game mechanics.",
-  "authors": ["Content Creator"],
-  "license": "MIT",
+  "name": "AppleSkinPlus",
+  "description": "Client-side freecam for Minecraft 1.21.1",
+  "authors": [
+    "Sjdorkddjdc"
+  ],
   "environment": "client",
   "entrypoints": {
     "client": [
@@ -17,8 +18,7 @@
   ],
   "depends": {
     "fabricloader": ">=0.16.0",
-    "fabric-api": "*",
-    "minecraft": ">=1.21",
-    "java": ">=21"
+    "minecraft": "1.21.1",
+    "fabric-api": "*"
   }
 }
