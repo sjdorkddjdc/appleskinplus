@@ -16,8 +16,7 @@
   "mixins": [
     "appleskinplus.mixins.json"
   ],
-  "depends": 
-    {
+  "depends":                        {
   "schemaVersion": 1,
   "id": "appleskinplus",
   "version": "1.0.0",
